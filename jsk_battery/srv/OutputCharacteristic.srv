@@ -1,0 +1,7 @@
+# rated measurement current / ratio
+#  25[A] / 37[mV/A]
+#  50[A] / 23[mV/A]
+# 100[A] / 19[mV/A]
+
+uint16 ratio                    # [mV] / [A]
+---
