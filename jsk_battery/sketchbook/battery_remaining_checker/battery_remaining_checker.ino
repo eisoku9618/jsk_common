@@ -15,9 +15,9 @@ ros::NodeHandle nh;
 jsk_battery::BatteryStatus bs_msg;
 ros::Publisher pub("battery_state", &bs_msg);
 
-uint64_t max_capacity = 15 * 1e3;
-uint64_t used_capacity = 0;
-uint16_t ratio = 23;
+float max_capacity = 15;
+float used_capacity = 0;
+float ratio = 23;
 float zero_point = 1024 / 2;
 
 void bc_cb(const jsk_battery::BatteryCapacity::Request &req, jsk_battery::BatteryCapacity::Response &res) {
@@ -39,11 +39,6 @@ ros::ServiceServer<jsk_battery::ZeroPointAdjustment::Request, jsk_battery::ZeroP
 uint32_t prev_time = 0;
 uint32_t cur_time = 0;
 uint32_t cycle_time = 0;
-
-static uint32_t currentTime = 0;
-static uint16_t previousTime = 0;
-static uint16_t cycleTime = 0;
-static float prev_uci = 0.0; //prevous current integration value
 
 float averageAnalog(int pin, int num){
   float v = 0;
@@ -67,11 +62,34 @@ void setup() {
 }
 
 void main_loop() {
-  int value = averageAnalog(0, 4);    /* [bit] */
-  bs_msg.current = (value - zero_point) * (5.0 / 1024) / (ratio * 1e-3); /* current [A] : [bit] * [V/bit] / [V/A] */
-  used_capacity += (bs_msg.current * 1e3) * (cycle_time * 1e-6 / 60 / 60);
-  bs_msg.remaining_capacity = max_capacity - used_capacity;
-  bs_msg.remaining_percentage = (max_capacity - used_capacity) / max_capacity * 100;
+  float value = averageAnalog(0, 4);    /* [bit] */
+  char buf[15];
+  /* 
+   * dtostrf(value, 5, 2, buf);
+   * nh.loginfo(buf);
+   * dtostrf(zero_point, 5, 2, buf);
+   * nh.loginfo(buf);
+   */
+
+  float current;
+  float remaining_capacity;
+  float remaining_percentage;
+
+  current = (value - zero_point) * (5.0 / 1024) / ratio; /* mA */
+  used_capacity += current * ((float)cycle_time * 1e-6) / 60 / 60; /* mAh */
+  remaining_capacity = max_capacity - used_capacity * 1e-3; /* Ah */
+  remaining_percentage = remaining_capacity / max_capacity * 100;
+
+  bs_msg.current = current;
+  bs_msg.remaining_capacity = remaining_capacity;
+  bs_msg.remaining_percentage = remaining_percentage;
+
+  /* 
+   * bs_msg.current = (value - zero_point) * (5.0 / 1024) / ratio; /\* current [mA] : [bit] * [V/bit] / [mV/A] *\/
+   * used_capacity += bs_msg.current * (cycle_time * 1e-6) / 60 / 60;        /\* [mA] * [h] *\/
+   * bs_msg.remaining_capacity = (max_capacity - used_capacity);
+   * bs_msg.remaining_percentage = (max_capacity - used_capacity) / max_capacity * 100;
+   */
   delay(50);
 
   cur_time = micros();
@@ -83,6 +101,13 @@ void loop() {
   for(int i=0; i<10; i++) {
     main_loop();
   }
+  /* 
+   * char buf[15];
+   * dtostrf(cycle_time, 5, 2, buf);
+   * nh.loginfo(buf);
+   * dtostrf(used_capacity, 10, 2, buf);
+   * nh.loginfo(buf);
+   */
   pub.publish(&bs_msg);
   nh.spinOnce();
 }

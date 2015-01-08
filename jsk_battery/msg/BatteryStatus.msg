@@ -12,4 +12,4 @@ byte level                      # level of operation enumerated above
 float32 current                 # [A]
 
 float32 remaining_percentage    # [%]
-uint64 remaining_capacity       # [mAh]
+float32 remaining_capacity       # [Ah]

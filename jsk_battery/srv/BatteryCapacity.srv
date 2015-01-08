@@ -1,2 +1,2 @@
-uint64 battery_capacity        # [mAh]
+float32 battery_capacity        # [mAh]
 ---

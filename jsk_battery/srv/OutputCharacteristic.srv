@@ -3,5 +3,5 @@
 #  50[A] / 23[mV/A]
 # 100[A] / 19[mV/A]
 
-uint16 ratio                    # [mV] / [A]
+float32 ratio                    # [mV] / [A]
 ---
