@@ -1,7 +1,5 @@
 #include <ros.h>
 
-#include <std_msgs/String.h>
-#include <std_msgs/Float64.h>
 /* srv */
 #include <jsk_battery/BatteryCapacity.h>
 #include <jsk_battery/OutputCharacteristic.h>
@@ -10,12 +8,15 @@
 #include <jsk_battery/BatteryStatus.h>
 #include <jsk_battery/BatteryArray.h>
 
+#define PIN 0
+#define VREF 5.0
+
 ros::NodeHandle nh;
 
 jsk_battery::BatteryStatus bs_msg;
 ros::Publisher pub("battery_state", &bs_msg);
 
-float max_capacity = 15;
+float max_capacity = 15000;
 float used_capacity = 0;
 float ratio = 23;
 float zero_point = 1024 / 2;
@@ -57,12 +58,12 @@ void setup() {
   /* msg */
   nh.advertise(pub);
   /* initialize */
-  zero_point = averageAnalog(0, 20);
+  zero_point = averageAnalog(PIN, 20);
   prev_time = micros();
 }
 
 void main_loop() {
-  float value = averageAnalog(0, 4);    /* [bit] */
+  float value = averageAnalog(PIN, 4);    /* [bit] */
   char buf[15];
   /* 
    * dtostrf(value, 5, 2, buf);
@@ -75,9 +76,9 @@ void main_loop() {
   float remaining_capacity;
   float remaining_percentage;
 
-  current = (value - zero_point) * (5.0 / 1024) / ratio; /* mA */
-  used_capacity += current * ((float)cycle_time * 1e-6) / 60 / 60; /* mAh */
-  remaining_capacity = max_capacity - used_capacity * 1e-3; /* Ah */
+  current = (value - zero_point) * (VREF * 1e3 / 1024) / ratio; /* [A] = [bit] * [mV/bit] / [mV/A] */
+  used_capacity += current * ((float)cycle_time * 1e-6); /* [As] = [A] * [s] */
+  remaining_capacity = max_capacity - used_capacity * 1e3 / 60 / 60; /* [mAh] */
   remaining_percentage = remaining_capacity / max_capacity * 100;
 
   bs_msg.current = current;
