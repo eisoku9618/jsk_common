@@ -13,3 +13,8 @@ float32 current                 # [A]
 
 float32 remaining_percentage    # [%]
 float32 remaining_capacity       # [mAh]
+float32 analog_value
+int16 zero_point
+float32 discharged_capacity       # [As]
+float32 cycle_time                # [us]
+float32 diff
